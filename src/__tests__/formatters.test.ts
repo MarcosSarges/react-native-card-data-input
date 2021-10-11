@@ -1,4 +1,4 @@
-import { cardNumberFormatter, expirationDateFormatter } from '../utils/formatters';
+import { cardNumberFormatter } from '../utils/formatters';
 
 describe('cardNumberFormatter', () => {
 	test.each([
