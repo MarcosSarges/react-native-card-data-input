@@ -28,12 +28,12 @@ export const CardBack: React.FC = () => {
 				<Image style={styles.preCvv} source={require('../assets/tape.png')} />
 
 				<TextInput
-					placeholder={PLACEHOLDERS.cvv}
+					placeholder={card?.code.size === 4 ? PLACEHOLDERS.cvv4digits : PLACEHOLDERS.cvv}
 					style={styles.cvvInput}
 					value={data.cvv}
 					keyboardType="numeric"
 					editable={!!card}
-					maxLength={card?.code.size}
+					maxLength={card?.code.size ?? 3}
 					{...placeholderColor}
 					onChangeText={(text) => setData({ ...data, cvv: text.replace(/\D/g, '') })}
 				/>
