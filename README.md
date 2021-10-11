@@ -20,6 +20,7 @@ const ref = React.useRef(null);
 ref.current.getCardData(); // to get data inserted by user
 ref.current.flip(); // flip the card anytime you want
 ref.current.shake(); // ask for attention
+ref.current.clear(); // clear all inputs
 ```
 
 ## Props
