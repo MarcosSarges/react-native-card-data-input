@@ -1,6 +1,6 @@
 {
 	"name": "react-native-card-data-input",
-	"version": "0.1.0",
+	"version": "0.0.0",
 	"description": "just another credit card input package",
 	"main": "lib/commonjs/index",
 	"module": "lib/module/index",
