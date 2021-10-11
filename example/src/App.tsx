@@ -25,6 +25,10 @@ export default function App() {
 			>
 				<Text>Get card data</Text>
 			</TouchableOpacity>
+
+			<TouchableOpacity onPress={() => ref.current?.clear()} style={styles.marginTop}>
+				<Text>Clear</Text>
+			</TouchableOpacity>
 		</View>
 	);
 }

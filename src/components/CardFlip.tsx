@@ -117,6 +117,15 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 		}
 	}, [flipAnimatedValue, cardBackWidthAnimatedValue, isShowingFront]);
 
+	const clear = () => {
+		setCardData({
+			cvv: '',
+			expiry: '',
+			number: '',
+			owner: '',
+		});
+	};
+
 	const getCardData = React.useCallback(() => {
 		const errors: CardError[] = [];
 
@@ -136,6 +145,7 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 		flip,
 		getCardData,
 		shake,
+		clear,
 	}));
 
 	return (

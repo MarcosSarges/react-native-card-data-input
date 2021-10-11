@@ -13,6 +13,7 @@ export type CardDataResponse = {
 export type CardRef = {
 	flip: () => void;
 	shake: () => void;
+	clear: () => void;
 	getCardData: () => CardDataResponse;
 };
 
