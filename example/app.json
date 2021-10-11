@@ -1,22 +1,16 @@
 {
-  "name": "react-native-card-data-input-example",
-  "displayName": "CardDataInput Example",
-  "expo": {
-    "name": "react-native-card-data-input-example",
-    "slug": "react-native-card-data-input-example",
-    "description": "Example app for react-native-card-data-input",
-    "privacy": "public",
-    "version": "1.0.0",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
-    "ios": {
-      "supportsTablet": true
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ]
-  }
+	"name": "react-native-card-data-input-example",
+	"displayName": "CardDataInput Example",
+	"expo": {
+		"name": "react-native-card-data-input-example",
+		"slug": "react-native-card-data-input-example",
+		"description": "Example app for react-native-card-data-input",
+		"privacy": "public",
+		"version": "1.0.0",
+		"platforms": ["ios", "android", "web"],
+		"ios": {
+			"supportsTablet": true
+		},
+		"assetBundlePatterns": ["**/*"]
+	}
 }

@@ -11,7 +11,7 @@ npm install react-native-card-data-input
 ## Usage
 
 ```js
-import CardDataInput from "react-native-card-data-input";
+import CardDataInput from 'react-native-card-data-input';
 
 // ...
 
