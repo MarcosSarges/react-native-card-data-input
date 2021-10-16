@@ -71,7 +71,7 @@ export const CardFront: React.FC<Props> = ({ isFocused }) => {
 						style={[
 							styles.cardHolderInput,
 							{
-								fontSize: height / 14,
+								fontSize: height / 15,
 								height: height / 7,
 							},
 						]}
@@ -94,7 +94,7 @@ export const CardFront: React.FC<Props> = ({ isFocused }) => {
 						style={[
 							styles.cardExpiryInput,
 							{
-								fontSize: height / 14,
+								fontSize: height / 15,
 								height: height / 7,
 							},
 						]}
