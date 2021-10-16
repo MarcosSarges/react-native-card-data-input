@@ -1,5 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CardFlip, CardRef } from 'react-native-card-data-input';
 
 export default function App() {
@@ -7,7 +8,23 @@ export default function App() {
 
 	return (
 		<View style={styles.container}>
-			<CardFlip ref={ref} />
+			<CardFlip
+				ref={ref}
+				background={<LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} />}
+				labels={{
+					securityCode: 'Código de segurança',
+				}}
+				placeholders={{
+					holder: 'Nome no cartão',
+				}}
+				onValidStateChanged={(value) => Alert.alert(JSON.stringify(value))}
+				data={{
+					number: '5555555555555555',
+					holder: 'erick',
+					expiry: '02/29',
+					cvv: '123',
+				}}
+			/>
 
 			<TouchableOpacity onPress={() => ref.current?.flip()} style={styles.marginTop}>
 				<Text>Flip</Text>
@@ -18,9 +35,7 @@ export default function App() {
 			</TouchableOpacity>
 
 			<TouchableOpacity
-				onPress={() => {
-					console.log(ref.current?.getCardData());
-				}}
+				onPress={() => Alert.alert('Card data', JSON.stringify(ref.current?.getCardData()))}
 				style={styles.marginTop}
 			>
 				<Text>Get card data</Text>
@@ -38,6 +53,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
+		// marginHorizontal: 50,
 	},
 	marginTop: {
 		marginTop: 20,

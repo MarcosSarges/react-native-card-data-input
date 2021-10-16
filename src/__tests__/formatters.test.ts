@@ -1,4 +1,4 @@
-import { cardNumberFormatter } from '../utils/formatters';
+import { cardNumberFormatter } from '../helpers/formatters';
 
 describe('cardNumberFormatter', () => {
 	test.each([
