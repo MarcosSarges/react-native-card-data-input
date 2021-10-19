@@ -17,12 +17,28 @@ import type {
 	Labels,
 	Placeholders,
 	ReadOnlyFields,
+	CardSideRef,
 } from '../types';
 
 const CARD_DEFAULT_BACKGROUND = '#5a5a5a';
 
 export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 	const { data, background, onValidStateChanged = () => {} } = props;
+
+	const [containerWidth, setContainerWidth] = React.useState(0);
+	const [animationValue, setAnimationValue] = React.useState(0);
+	const isShowingFront = React.useMemo(() => animationValue <= 90, [animationValue]);
+	const flipAnimatedValue = React.useRef(new Animated.Value(0)).current;
+	const shakeAnimatedValue = React.useRef(new Animated.Value(0)).current;
+	const cardFrontRef = React.useRef<CardSideRef>(null);
+	const cardBackRef = React.useRef<CardSideRef>(null);
+
+	const [cardData, setCardData] = React.useState<CardData>({
+		cvv: data?.cvv ?? '',
+		expiry: data?.expiry ?? '',
+		number: cardNumberFormatter('', data?.number ?? ''),
+		holder: data?.holder ?? '',
+	});
 
 	const readOnly: Required<ReadOnlyFields> = React.useMemo(() => {
 		const ensureReadOnlyValue = (key: keyof CardData) =>
@@ -53,30 +69,6 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 		[props.placeholders]
 	);
 
-	const [containerWidth, setContainerWidth] = React.useState(0);
-
-	const [animationValue, setAnimationValue] = React.useState(0);
-	const isShowingFront = React.useMemo(() => animationValue <= 90, [animationValue]);
-
-	const flipAnimatedValue = React.useRef(new Animated.Value(0)).current;
-	const shakeAnimatedValue = React.useRef(new Animated.Value(0)).current;
-
-	const [cardData, setCardData] = React.useState<CardData>({
-		cvv: data?.cvv ?? '',
-		expiry: data?.expiry ?? '',
-		number: cardNumberFormatter('', data?.number ?? ''),
-		holder: data?.holder ?? '',
-	});
-
-	React.useEffect(() => {
-		setCardData({
-			cvv: data?.cvv ?? '',
-			expiry: data?.expiry ?? '',
-			number: cardNumberFormatter('', data?.number ?? ''),
-			holder: data?.holder ?? '',
-		});
-	}, [data]);
-
 	const isValidCardData = React.useMemo(() => {
 		const { isValid: isValidCardNumber } = cardValidator.number(cardData.number);
 		const { isValid: isValidSecurityCode } = cardValidator.cvv(cardData.cvv);
@@ -92,6 +84,15 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 			isValidExpiryDate,
 		};
 	}, [cardData.cvv, cardData.expiry, cardData.number, cardData.holder]);
+
+	React.useEffect(() => {
+		setCardData({
+			cvv: data?.cvv ?? '',
+			expiry: data?.expiry ?? '',
+			number: cardNumberFormatter('', data?.number ?? ''),
+			holder: data?.holder ?? '',
+		});
+	}, [data]);
 
 	React.useEffect(() => {
 		onValidStateChanged(isValidCardData.isValid);
@@ -152,6 +153,7 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 
 	const flip = React.useCallback(() => {
 		if (!isShowingFront) {
+			cardBackRef.current?.blurFields();
 			Animated.spring(flipAnimatedValue, {
 				toValue: 0,
 				friction: 8,
@@ -159,6 +161,7 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 				useNativeDriver: true,
 			}).start();
 		} else {
+			cardFrontRef.current?.blurFields();
 			Animated.spring(flipAnimatedValue, {
 				toValue: 180,
 				friction: 8,
@@ -181,16 +184,18 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 			};
 
 			for (const [fieldName, shouldClear] of Object.entries(fieldsToClear)) {
-				// @ts-expect-error
-				if (shouldClear && !readOnly[fieldName]) setCardData((oldCardData) => ({ ...oldCardData, [fieldName]: '' }));
+				if (shouldClear && !readOnly[fieldName as keyof ReadOnlyFields])
+					setCardData((oldCardData) => ({ ...oldCardData, [fieldName]: '' }));
 			}
 		},
 		[readOnly]
 	);
 
 	const getCardData = React.useCallback(() => {
-		const errors: CardError[] = [];
+		cardFrontRef.current?.blurFields();
+		cardBackRef.current?.blurFields();
 
+		const errors: CardError[] = [];
 		const { isValidCardNumber, isValidExpiryDate, isValidOwnerName, isValidSecurityCode, isValid } = isValidCardData;
 
 		if (!isValidCardNumber) errors.push(ErrorsEnum.NOT_VALID_CARD_NUMBER);
@@ -253,7 +258,7 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 						style={[styles.flipCard, styles.flipCardFront, { transform: [frontAnimatedStyle, shakeStyle] }]}
 					>
 						<SideBackground>
-							<CardFront isFocused={isShowingFront} />
+							<CardFront ref={cardFrontRef} isFocused={isShowingFront} />
 						</SideBackground>
 					</Animated.View>
 
@@ -267,7 +272,7 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 						]}
 					>
 						<SideBackground>
-							<CardBack isFocused={!isShowingFront} />
+							<CardBack ref={cardBackRef} isFocused={!isShowingFront} />
 						</SideBackground>
 					</Animated.View>
 				</View>

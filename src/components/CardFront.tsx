@@ -8,30 +8,43 @@ import { placeholderColor } from '../helpers/placeholders';
 import { MaskedTextInput } from 'react-native-mask-text';
 import { cardNumberFormatter } from '../helpers/formatters';
 import { usePreviousValue } from '../helpers/hooks';
+import type { CardSideRef } from '..';
 
 type Props = {
 	isFocused: boolean;
 };
 
-export const CardFront: React.FC<Props> = ({ isFocused }) => {
-	const { data, isValid, setData, flip: flipFromContext, shake, readOnly, height, placeholders } = useCardContext();
+export const CardFront = React.forwardRef<CardSideRef, Props>(({ isFocused }, ref) => {
+	const { data, isValid, setData, flip, readOnly, height, placeholders } = useCardContext();
 
 	const cardNumberInputRef = React.useRef<TextInput>(null);
-	const ownerInputRef = React.useRef<TextInput>(null);
+	const holderInputRef = React.useRef<TextInput>(null);
 	const expiryInputRef = React.useRef<TextInput>(null);
 
 	const previousIsFocused = usePreviousValue(isFocused);
 
-	const flip = React.useCallback(() => {
-		cardNumberInputRef?.current?.blur();
-		ownerInputRef?.current?.blur();
-		expiryInputRef?.current?.blur();
-		flipFromContext();
-	}, [flipFromContext]);
+	React.useImperativeHandle(ref, () => ({
+		blurFields: () => {
+			cardNumberInputRef.current?.blur();
+			holderInputRef.current?.blur();
+			expiryInputRef.current?.blur();
+		},
+	}));
 
 	React.useEffect(() => {
-		if (!previousIsFocused && isFocused && !isValid) cardNumberInputRef.current?.focus();
-	}, [isFocused, isValid, previousIsFocused]);
+		setTimeout(() => {
+			if (!previousIsFocused && isFocused && !isValid.isValid) {
+				// card data is invalid, so keep giving focus to some field
+				if (!readOnly.number) {
+					cardNumberInputRef.current?.focus();
+				} else if (!readOnly.holder) {
+					holderInputRef.current?.focus();
+				} else if (!readOnly.expiry) {
+					expiryInputRef.current?.focus();
+				}
+			}
+		}, 200);
+	}, [isFocused, isValid, previousIsFocused, readOnly.expiry, readOnly.holder, readOnly.number]);
 
 	const cardBrandImage = React.useMemo(() => {
 		const { card } = cardValidator.number(data.number);
@@ -60,13 +73,13 @@ export const CardFront: React.FC<Props> = ({ isFocused }) => {
 					onChangeText={(text) => setData({ ...data, number: cardNumberFormatter(data.number, text) })}
 					returnKeyType="next"
 					blurOnSubmit={false}
-					editable={!(typeof readOnly === 'boolean' ? readOnly : readOnly.number)}
-					onSubmitEditing={() => ownerInputRef.current?.focus()}
+					editable={!readOnly.number}
+					onSubmitEditing={() => holderInputRef.current?.focus()}
 				/>
 
 				<View style={styles.line2}>
 					<TextInput
-						ref={ownerInputRef}
+						ref={holderInputRef}
 						value={data.holder.toUpperCase()}
 						style={[
 							styles.cardHolderInput,
@@ -83,7 +96,7 @@ export const CardFront: React.FC<Props> = ({ isFocused }) => {
 						onChangeText={(text) => setData({ ...data, holder: text })}
 						returnKeyType="next"
 						blurOnSubmit={false}
-						editable={!(typeof readOnly === 'boolean' ? readOnly : readOnly.holder)}
+						editable={!readOnly.holder}
 						onSubmitEditing={() => expiryInputRef.current?.focus()}
 					/>
 
@@ -106,22 +119,15 @@ export const CardFront: React.FC<Props> = ({ isFocused }) => {
 						onChangeText={(text) => setData({ ...data, expiry: text })}
 						returnKeyType="next"
 						blurOnSubmit={false}
-						editable={!(typeof readOnly === 'boolean' ? readOnly : readOnly.expiry)}
+						editable={!readOnly.expiry}
 						textAlign="right"
-						onSubmitEditing={() => {
-							if (!isValid.isValidCardNumber || !isValid.isValidOwnerName || !isValid.isValidExpiryDate) {
-								shake();
-								return;
-							}
-
-							flip();
-						}}
+						onSubmitEditing={() => flip()}
 					/>
 				</View>
 			</View>
 
 			<TouchableOpacity
-				onPress={flip}
+				onPress={() => flip()}
 				style={[
 					styles.flipButton,
 					{
@@ -146,7 +152,7 @@ export const CardFront: React.FC<Props> = ({ isFocused }) => {
 			</View>
 		</View>
 	);
-};
+});
 
 const styles = StyleSheet.create({
 	container: {

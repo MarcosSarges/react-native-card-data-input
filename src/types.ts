@@ -10,6 +10,10 @@ export type CardDataResponse = {
 	errors: CardError[];
 };
 
+export type CardSideRef = {
+	blurFields: () => void;
+};
+
 export type CardRef = {
 	flip: () => void;
 	shake: () => void;
@@ -60,7 +64,7 @@ export type CardContextProps = {
 	setData: (data: CardData) => void;
 	flip: () => void;
 	shake: () => void;
-	readOnly: boolean | Required<ReadOnlyFields>;
+	readOnly: Required<ReadOnlyFields>;
 	height: number;
 	labels: Required<Labels>;
 	placeholders: Required<Placeholders>;

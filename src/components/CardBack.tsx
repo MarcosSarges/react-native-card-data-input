@@ -7,28 +7,31 @@ import { useCardContext } from '../context/CardContext';
 import { placeholderColor, PLACEHOLDERS } from '../helpers/placeholders';
 import { usePreviousValue } from '../helpers/hooks';
 import { LabeledInput } from './LabeledInput';
+import type { CardSideRef } from '..';
 
 type Props = {
 	isFocused: boolean;
 };
 
-export const CardBack: React.FC<Props> = ({ isFocused }) => {
-	const { data, setData, flip: flipFromContext, readOnly, height, labels, placeholders } = useCardContext();
-	// const { isValid } = cardValidator.cvv(data.cvv);
+export const CardBack = React.forwardRef<CardSideRef, Props>(({ isFocused }, ref) => {
+	const { data, setData, flip, readOnly, height, labels, placeholders } = useCardContext();
 	const cvvInputRef = React.useRef<TextInput>(null);
 	const previousIsFocused = usePreviousValue(isFocused);
 
 	React.useEffect(() => {
-		if (!previousIsFocused && isFocused) cvvInputRef.current?.focus();
+		setTimeout(() => {
+			if (!previousIsFocused && isFocused) cvvInputRef.current?.focus();
+		}, 200);
 	}, [isFocused, previousIsFocused]);
 
 	const { card } = cardValidator.number(data.number);
 	const cardBrandImage = React.useMemo(() => getCardBrandLogo(card?.type), [card?.type]);
 
-	const flip = React.useCallback(() => {
-		cvvInputRef?.current?.blur();
-		flipFromContext();
-	}, [flipFromContext]);
+	React.useImperativeHandle(ref, () => ({
+		blurFields: () => {
+			cvvInputRef.current?.blur();
+		},
+	}));
 
 	return (
 		<View style={styles.container}>
@@ -72,7 +75,7 @@ export const CardBack: React.FC<Props> = ({ isFocused }) => {
 						]}
 						value={data.cvv.replace(/\D/g, '')}
 						keyboardType="numeric"
-						editable={!!card && !(typeof readOnly === 'boolean' ? readOnly : readOnly.cvv)}
+						editable={!!card && !readOnly.cvv}
 						maxLength={card?.code.size ?? 3}
 						{...placeholderColor}
 						autoCompleteType="cc-csc"
@@ -87,7 +90,7 @@ export const CardBack: React.FC<Props> = ({ isFocused }) => {
 			</View>
 		</View>
 	);
-};
+});
 
 const styles = StyleSheet.create({
 	container: {

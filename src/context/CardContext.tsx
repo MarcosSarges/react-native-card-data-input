@@ -18,7 +18,12 @@ export const CardContext = React.createContext<CardContextProps>({
 	setData: (_data) => {},
 	flip: () => {},
 	shake: () => {},
-	readOnly: false,
+	readOnly: {
+		number: false,
+		holder: false,
+		expiry: false,
+		cvv: false,
+	},
 	height: 0,
 	labels: {
 		securityCode: 'Security code',

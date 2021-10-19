@@ -17,6 +17,9 @@ export default function App() {
 				placeholders={{
 					holder: 'Nome no cartão',
 				}}
+				readOnly={{
+					number: true,
+				}}
 				onValidStateChanged={(value) => Alert.alert(JSON.stringify(value))}
 				data={{
 					number: '5555555555555555',
