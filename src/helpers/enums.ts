@@ -1,0 +1,8 @@
+import type { CardError } from '../types';
+
+export const ErrorsEnum: { [name: string]: CardError } = {
+	NOT_VALID_CARD_NUMBER: 'NOT_VALID_CARD_NUMBER',
+	NOT_VALID_EXPIRATION_DATE: 'NOT_VALID_EXPIRATION_DATE',
+	NOT_VALID_OWNER_NAME: 'NOT_VALID_OWNER_NAME',
+	NOT_VALID_SECURITY_CODE: 'NOT_VALID_SECURITY_CODE',
+};

@@ -1,32 +1,78 @@
-import React from 'react';
-import { StyleSheet, View, Animated } from 'react-native';
-import { CardFront } from './CardFront';
-import { FlipContext } from '../context/FlipContext';
-import { CardBack } from './CardBack';
-import { CardDataContext } from '../context/DataContext';
-import type { CardData, CardRef, CardProps, CardError } from '../types';
+import React, { PropsWithChildren } from 'react';
+import { StyleSheet, View, Animated, ViewProps, ViewStyle } from 'react-native';
 import cardValidator from 'card-validator';
 
+import { CardFront } from './CardFront';
+import { CardBack } from './CardBack';
+import { CardContext } from '../context/CardContext';
+import { ErrorsEnum } from '../helpers/enums';
+import { cardNumberFormatter } from '../helpers/formatters';
+import { LABELS, PLACEHOLDERS } from '../helpers/placeholders';
+import type {
+	CardData,
+	CardRef,
+	CardProps,
+	CardError,
+	ClearFields,
+	Labels,
+	Placeholders,
+	ReadOnlyFields,
+	CardSideRef,
+} from '../types';
+
+const CARD_DEFAULT_BACKGROUND = '#5a5a5a';
+
 export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
+	const { data, background, onValidStateChanged = () => {} } = props;
+
+	const [containerWidth, setContainerWidth] = React.useState(0);
 	const [animationValue, setAnimationValue] = React.useState(0);
-
 	const isShowingFront = React.useMemo(() => animationValue <= 90, [animationValue]);
-
 	const flipAnimatedValue = React.useRef(new Animated.Value(0)).current;
 	const shakeAnimatedValue = React.useRef(new Animated.Value(0)).current;
-	const cardBackWidthAnimatedValue = React.useRef(new Animated.Value(0)).current;
+	const cardFrontRef = React.useRef<CardSideRef>(null);
+	const cardBackRef = React.useRef<CardSideRef>(null);
 
 	const [cardData, setCardData] = React.useState<CardData>({
-		cvv: props.data?.cvv ?? '',
-		expiry: props.data?.expiry ?? '',
-		number: props.data?.number ?? '',
-		owner: props.data?.owner ?? '',
+		cvv: data?.cvv ?? '',
+		expiry: data?.expiry ?? '',
+		number: cardNumberFormatter('', data?.number ?? ''),
+		holder: data?.holder ?? '',
 	});
+
+	const readOnly: Required<ReadOnlyFields> = React.useMemo(() => {
+		const ensureReadOnlyValue = (key: keyof CardData) =>
+			typeof props.readOnly === 'boolean' ? props.readOnly : props.readOnly?.[key] ?? false;
+
+		return {
+			number: ensureReadOnlyValue('number'),
+			holder: ensureReadOnlyValue('holder'),
+			expiry: ensureReadOnlyValue('expiry'),
+			cvv: ensureReadOnlyValue('cvv'),
+		};
+	}, [props.readOnly]);
+
+	const labels: Required<Labels> = React.useMemo(
+		() => ({
+			securityCode: props.labels?.securityCode ?? LABELS.securityCode,
+		}),
+		[props.labels]
+	);
+
+	const placeholders: Required<Placeholders> = React.useMemo(
+		() => ({
+			number: props.placeholders?.number ?? PLACEHOLDERS.number,
+			holder: props.placeholders?.holder ?? PLACEHOLDERS.holder,
+			expiry: props.placeholders?.expiry ?? PLACEHOLDERS.expiry,
+			cvv: props.placeholders?.cvv ?? PLACEHOLDERS.cvv,
+		}),
+		[props.placeholders]
+	);
 
 	const isValidCardData = React.useMemo(() => {
 		const { isValid: isValidCardNumber } = cardValidator.number(cardData.number);
 		const { isValid: isValidSecurityCode } = cardValidator.cvv(cardData.cvv);
-		const { isValid: isValidOwnerName } = cardValidator.cardholderName(cardData.owner);
+		const { isValid: isValidOwnerName } = cardValidator.cardholderName(cardData.holder);
 		const { isValid: isValidExpiryDate } = cardValidator.expirationDate(cardData.expiry);
 		const isValid = isValidCardNumber && isValidSecurityCode && isValidOwnerName && isValidExpiryDate;
 
@@ -37,7 +83,20 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 			isValidOwnerName,
 			isValidExpiryDate,
 		};
-	}, [cardData.cvv, cardData.expiry, cardData.number, cardData.owner]);
+	}, [cardData.cvv, cardData.expiry, cardData.number, cardData.holder]);
+
+	React.useEffect(() => {
+		setCardData({
+			cvv: data?.cvv ?? '',
+			expiry: data?.expiry ?? '',
+			number: cardNumberFormatter('', data?.number ?? ''),
+			holder: data?.holder ?? '',
+		});
+	}, [data]);
+
+	React.useEffect(() => {
+		onValidStateChanged(isValidCardData.isValid);
+	}, [isValidCardData.isValid, onValidStateChanged]);
 
 	React.useEffect(() => {
 		flipAnimatedValue.addListener(({ value }) => {
@@ -49,30 +108,39 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 		};
 	}, [flipAnimatedValue]);
 
-	const shakeStyle = {
-		translateX: shakeAnimatedValue.interpolate({
-			inputRange: [-1, -0.5, 0, 0.5, 1],
-			outputRange: [-10, -5, 0, 5, 10],
+	const shakeStyle = React.useMemo(
+		() => ({
+			translateX: shakeAnimatedValue.interpolate({
+				inputRange: [-1, -0.5, 0, 0.5, 1],
+				outputRange: [-10, -5, 0, 5, 10],
+			}),
 		}),
-	};
+		[shakeAnimatedValue]
+	);
 
-	const displayBack = { display: isShowingFront ? 'none' : 'flex' };
+	const displayBack: ViewStyle = { display: isShowingFront ? 'none' : 'flex' };
 
-	const frontAnimatedStyle = {
-		rotateY: flipAnimatedValue.interpolate({
-			inputRange: [0, 180],
-			outputRange: ['0deg', '180deg'],
+	const frontAnimatedStyle = React.useMemo(
+		() => ({
+			rotateY: flipAnimatedValue.interpolate({
+				inputRange: [0, 180],
+				outputRange: ['0deg', '180deg'],
+			}),
 		}),
-	};
+		[flipAnimatedValue]
+	);
 
-	const backAnimatedStyle = {
-		rotateY: flipAnimatedValue.interpolate({
-			inputRange: [0, 180],
-			outputRange: ['180deg', '360deg'],
+	const backAnimatedStyle = React.useMemo(
+		() => ({
+			rotateY: flipAnimatedValue.interpolate({
+				inputRange: [0, 180],
+				outputRange: ['180deg', '360deg'],
+			}),
 		}),
-	};
+		[flipAnimatedValue]
+	);
 
-	const shake = () => {
+	const shake = React.useCallback(() => {
 		shakeAnimatedValue.setValue(0);
 
 		Animated.sequence([
@@ -81,64 +149,61 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 			Animated.timing(shakeAnimatedValue, { toValue: 1, duration: 50, useNativeDriver: true }),
 			Animated.timing(shakeAnimatedValue, { toValue: 0, duration: 50, useNativeDriver: true }),
 		]).start();
-	};
+	}, [shakeAnimatedValue]);
 
 	const flip = React.useCallback(() => {
 		if (!isShowingFront) {
-			Animated.parallel([
-				Animated.spring(flipAnimatedValue, {
-					toValue: 0,
-					friction: 8,
-					tension: 10,
-					useNativeDriver: true,
-				}),
-
-				Animated.timing(cardBackWidthAnimatedValue, {
-					toValue: 0,
-					duration: 300,
-					useNativeDriver: true,
-				}),
-			]).start();
+			cardBackRef.current?.blurFields();
+			Animated.spring(flipAnimatedValue, {
+				toValue: 0,
+				friction: 8,
+				tension: 10,
+				useNativeDriver: true,
+			}).start();
 		} else {
-			Animated.parallel([
-				Animated.spring(flipAnimatedValue, {
-					toValue: 180,
-					friction: 8,
-					tension: 10,
-					useNativeDriver: true,
-				}),
-
-				Animated.timing(cardBackWidthAnimatedValue, {
-					toValue: 100,
-					duration: 300,
-					useNativeDriver: true,
-				}),
-			]).start();
+			cardFrontRef.current?.blurFields();
+			Animated.spring(flipAnimatedValue, {
+				toValue: 180,
+				friction: 8,
+				tension: 10,
+				useNativeDriver: true,
+			}).start();
 		}
-	}, [flipAnimatedValue, cardBackWidthAnimatedValue, isShowingFront]);
+	}, [flipAnimatedValue, isShowingFront]);
 
-	const clear = () => {
-		setCardData({
-			cvv: '',
-			expiry: '',
-			number: '',
-			owner: '',
-		});
-	};
+	const clear: CardRef['clear'] = React.useCallback(
+		(fields) => {
+			const ensureFieldsToClearValue = (key: keyof CardData) =>
+				!readOnly[key] && (typeof fields === 'undefined' ? true : fields?.[key] ?? false);
+
+			const fieldsToClear: Required<ClearFields> = {
+				number: ensureFieldsToClearValue('number'),
+				holder: ensureFieldsToClearValue('holder'),
+				expiry: ensureFieldsToClearValue('expiry'),
+				cvv: ensureFieldsToClearValue('cvv'),
+			};
+
+			for (const [fieldName, shouldClear] of Object.entries(fieldsToClear)) {
+				if (shouldClear && !readOnly[fieldName as keyof ReadOnlyFields])
+					setCardData((oldCardData) => ({ ...oldCardData, [fieldName]: '' }));
+			}
+		},
+		[readOnly]
+	);
 
 	const getCardData = React.useCallback(() => {
-		const errors: CardError[] = [];
+		cardFrontRef.current?.blurFields();
+		cardBackRef.current?.blurFields();
 
+		const errors: CardError[] = [];
 		const { isValidCardNumber, isValidExpiryDate, isValidOwnerName, isValidSecurityCode, isValid } = isValidCardData;
 
-		if (!isValidCardNumber) errors.push('NOT_VALID_CARD_NUMBER');
-		if (!isValidExpiryDate) errors.push('NOT_VALID_EXPIRATION_DATE');
-		if (!isValidOwnerName) errors.push('NOT_VALID_OWNER_NAME');
-		if (!isValidSecurityCode) errors.push('NOT_VALID_SECURITY_CODE');
+		if (!isValidCardNumber) errors.push(ErrorsEnum.NOT_VALID_CARD_NUMBER);
+		if (!isValidExpiryDate) errors.push(ErrorsEnum.NOT_VALID_EXPIRATION_DATE);
+		if (!isValidOwnerName) errors.push(ErrorsEnum.NOT_VALID_OWNER_NAME);
+		if (!isValidSecurityCode) errors.push(ErrorsEnum.NOT_VALID_SECURITY_CODE);
 
-		const data = isValid ? cardData : null;
-
-		return { data, errors };
+		return { data: isValid ? cardData : null, errors };
 	}, [cardData, isValidCardData]);
 
 	React.useImperativeHandle(ref, () => ({
@@ -148,42 +213,71 @@ export const CardFlip = React.forwardRef<CardRef, CardProps>((props, ref) => {
 		clear,
 	}));
 
+	const onLayout = React.useCallback((event) => {
+		const { width } = event.nativeEvent.layout;
+		setContainerWidth(width);
+	}, []);
+
+	const containerHeight = React.useMemo(() => (containerWidth * 25) / 38, [containerWidth]);
+
+	const SideBackground = React.useCallback(
+		({ children: child }: PropsWithChildren<ViewProps>) => {
+			if (typeof background === 'string' || typeof background === 'undefined') {
+				return (
+					<View style={{ backgroundColor: background || CARD_DEFAULT_BACKGROUND, ...StyleSheet.absoluteFillObject }}>
+						{child}
+					</View>
+				);
+			} else {
+				return React.cloneElement(background, {
+					children: child,
+					style: { ...StyleSheet.absoluteFillObject },
+				});
+			}
+		},
+		[background]
+	);
+
 	return (
-		<FlipContext.Provider
+		<CardContext.Provider
 			value={{
+				data: cardData,
+				isValid: isValidCardData,
+				setData: setCardData,
 				flip,
 				shake,
+				readOnly,
+				height: containerHeight,
+				labels,
+				placeholders,
 			}}
 		>
-			<CardDataContext.Provider
-				value={{
-					data: cardData,
-					isValid: isValidCardData,
-					setData: setCardData,
-				}}
-			>
-				<View style={styles.container}>
-					<View style={styles.content}>
-						<Animated.View
-							style={[styles.flipCard, styles.flipCardFront, { transform: [frontAnimatedStyle, shakeStyle] }]}
-						>
-							<CardFront />
-						</Animated.View>
+			<View style={styles.container}>
+				<View style={[styles.content, { height: containerHeight }]} onLayout={onLayout}>
+					<Animated.View
+						style={[styles.flipCard, styles.flipCardFront, { transform: [frontAnimatedStyle, shakeStyle] }]}
+					>
+						<SideBackground>
+							<CardFront ref={cardFrontRef} isFocused={isShowingFront} />
+						</SideBackground>
+					</Animated.View>
 
-						<Animated.View
-							style={[
-								styles.flipCard,
-								styles.flipCardBack,
-								displayBack,
-								{ transform: [backAnimatedStyle, shakeStyle] },
-							]}
-						>
-							<CardBack />
-						</Animated.View>
-					</View>
+					<Animated.View
+						style={[
+							styles.flipCard,
+							styles.flipCardBack,
+							displayBack,
+							{ transform: [backAnimatedStyle, shakeStyle] },
+							{ marginTop: -containerHeight },
+						]}
+					>
+						<SideBackground>
+							<CardBack ref={cardBackRef} isFocused={!isShowingFront} />
+						</SideBackground>
+					</Animated.View>
 				</View>
-			</CardDataContext.Provider>
-		</FlipContext.Provider>
+			</View>
+		</CardContext.Provider>
 	);
 });
 
@@ -197,7 +291,6 @@ const styles = StyleSheet.create({
 	content: {
 		flex: 1,
 		maxWidth: 400,
-		height: 250,
 		marginHorizontal: 10,
 	},
 
@@ -205,13 +298,12 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backfaceVisibility: 'hidden',
 		borderRadius: 10,
-		backgroundColor: '#9a9a9a',
+		overflow: 'hidden',
 	},
 
 	flipCardFront: {},
 
 	flipCardBack: {
 		position: 'relative',
-		marginTop: -250,
 	},
 });
