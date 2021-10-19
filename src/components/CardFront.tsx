@@ -8,7 +8,7 @@ import { placeholderColor } from '../helpers/placeholders';
 import { MaskedTextInput } from 'react-native-mask-text';
 import { cardNumberFormatter } from '../helpers/formatters';
 import { usePreviousValue } from '../helpers/hooks';
-import type { CardSideRef } from '..';
+import type { CardSideRef } from '../types';
 
 type Props = {
 	isFocused: boolean;

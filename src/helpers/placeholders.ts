@@ -1,4 +1,4 @@
-import type { Labels, Placeholders } from '..';
+import type { Labels, Placeholders } from '../types';
 
 export const PLACEHOLDERS: Required<Placeholders> = {
 	holder: 'HOLDER NAME',

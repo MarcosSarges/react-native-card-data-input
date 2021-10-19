@@ -7,7 +7,7 @@ import { useCardContext } from '../context/CardContext';
 import { placeholderColor, PLACEHOLDERS } from '../helpers/placeholders';
 import { usePreviousValue } from '../helpers/hooks';
 import { LabeledInput } from './LabeledInput';
-import type { CardSideRef } from '..';
+import type { CardSideRef } from '../types';
 
 type Props = {
 	isFocused: boolean;

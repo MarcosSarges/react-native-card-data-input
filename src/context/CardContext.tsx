@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CardContextProps } from '..';
+import type { CardContextProps } from '../types';
 
 export const CardContext = React.createContext<CardContextProps>({
 	data: {

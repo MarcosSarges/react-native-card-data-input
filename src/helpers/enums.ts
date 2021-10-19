@@ -1,4 +1,4 @@
-import type { CardError } from '..';
+import type { CardError } from '../types';
 
 export const ErrorsEnum: { [name: string]: CardError } = {
 	NOT_VALID_CARD_NUMBER: 'NOT_VALID_CARD_NUMBER',
